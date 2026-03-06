@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+es:
+  url: ${ES_URL:https://14fbc4d8e7db49e6ab67b0658f0a4724.asia-south1.gcp.elastic-cloud.com:443}   # override via env var ES_URL
+  apiKey: ${ES_API_KEY:U2xHU3c1d0JHTXNwa3NlNUExa046QnhRZTI2N3k2ZUc4UURNNTc1NDBodw==}                              # REQUIRED: base64(id:key)
+
+spring:
+  main:
+    banner-mode: "off"
