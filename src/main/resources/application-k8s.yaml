@@ -1,0 +1,18 @@
+server:
+  port: 8080
+
+es:
+  url: ${ES_URL:https://31a8c5124ac34f5cb1796eb7065b67d9.us-central1.gcp.cloud.es.io:443}   # override via env var ES_URL
+  apiKey: ${ES_API_KEY:a0FYQjY1d0JsTnJkTzQtTDNpbUI6ckdnUGdicGFXQ1BteXFETTFnaWJOQQ==}        # REQUIRED: base64(id:key)
+
+spring:
+  main:
+    banner-mode: "off"
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Identity Platform / Firebase issuer
+          issuer-uri: https://securetoken.google.com/${GCP_PROJECT_ID:nagp-demo-487019}
+          # Optional: give Spring an explicit JWKs endpoint if discovery fails at startup
+          jwk-set-uri: https://www.googleapis.com/robot/v1/metadata/jwk/securetoken@system.gserviceaccount.com

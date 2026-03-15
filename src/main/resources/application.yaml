@@ -2,4 +2,4 @@ spring:
   application:
     name: search-api
   profiles:
-    active: local
+    active: k8s
