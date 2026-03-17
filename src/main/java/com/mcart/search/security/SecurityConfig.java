@@ -9,7 +9,8 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(auth -> auth
+        http.cors(cors -> {})
+                .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/info")
                         .permitAll()
                         .requestMatchers("/api/**")
