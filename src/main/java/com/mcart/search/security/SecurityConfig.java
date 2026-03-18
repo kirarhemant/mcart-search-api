@@ -16,10 +16,10 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
-                        .requestMatchers("/api/**")
-                        .authenticated()
+                        .requestMatchers(HttpMethod.GET,"/api/**")
+                        .permitAll()
                         .anyRequest()
-                        .permitAll())
+                        .authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt()); // JWT Bearer tokens
         return http.build();
     }
