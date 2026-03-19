@@ -45,7 +45,7 @@ public class SearchController {
      * Full‑text search (PLP) across name/brand/attributes.*
      */
     //@GetMapping
-    public JsonNode search(@RequestParam @NotBlank String q,
+    /*public JsonNode search(@RequestParam @NotBlank String q,
                            @RequestParam(defaultValue="0") @Min(0) int page,
                            @RequestParam(defaultValue="20") @Min(1) int size) throws Exception {
 
@@ -75,27 +75,36 @@ public class SearchController {
         try (InputStream in = resp.getEntity().getContent()) {
             return objectMapper.readTree(in);
         }
-    }
+    }*/
 
     /**
      * Full‑text search (PLP) across name/brand/attributes.*
      */
     @GetMapping
-    public JsonNode search(@RequestParam String q,
+    public JsonNode search(@RequestParam(required = false) String q,
                            @RequestParam(defaultValue="0") @Min(0) int page,
                            @RequestParam(defaultValue="20") @Min(1) int size,
                            @RequestParam(required = false) List<String> brand,
+                           @RequestParam(required = false) List<String> categories,
                            @RequestParam(required = false) Double priceMin,
                            @RequestParam(required = false) Double priceMax) throws IOException {
 
-        String must = """
-                  { "multi_match": { "query":"%s","fields":["name^3","brand","attributes.*"],"lenient": true } }
-                """.formatted(escape(q));
+        String must = (q == null || q.isBlank())
+                ? """
+          { "match_all": {} }
+          """
+                : """
+          { "multi_match": { "query":"%s","fields":["name^3","brand","categories","attributes.*"],"lenient": true } }
+          """.formatted(escape(q));
 
         StringBuilder filter = new StringBuilder();
         if (brand != null && !brand.isEmpty()) {
             filter.append("""
                     { "terms": { "brand": %s } },""".formatted(toJsonArray(brand)));
+        }
+        if (categories != null && !categories.isEmpty()) {
+            filter.append("""
+                    { "terms": { "categories": %s } },""".formatted(toJsonArray(categories)));
         }
         if (priceMin != null || priceMax != null) {
             String gte = priceMin != null ? "\"gte\":" + priceMin + "," : "";
@@ -116,11 +125,13 @@ public class SearchController {
                   %s,
                   "aggs": {
                     "brands": { "terms": {"field":"brand"} },
+                    "categories": { "terms": { "field": "categories" } },
                     "price_hist": { "histogram": {"field":"price","interval":100.0} }
                   }
                 }""".formatted(page * size, size, bool);
 
         Request req = new Request("POST", "/" + index + "/_search");
+        req.setOptions(options);
         req.setJsonEntity(body);
         Response resp = client.performRequest(req);
         try (InputStream in = resp.getEntity().getContent()) {
