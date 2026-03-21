@@ -89,13 +89,36 @@ public class SearchController {
                            @RequestParam(required = false) Double priceMin,
                            @RequestParam(required = false) Double priceMax) throws IOException {
 
-        String must = (q == null || q.isBlank())
+        /*String must = (q == null || q.isBlank())
                 ? """
           { "match_all": {} }
           """
                 : """
           { "multi_match": { "query":"%s","fields":["name^3","brand","categories","attributes.*"],"lenient": true } }
-          """.formatted(escape(q));
+          """.formatted(escape(q));*/
+
+        String must = (q == null || q.isBlank()) ? "{ \"match_all\": {} }" : """
+                {
+                  "bool": {
+                    "should": [
+                      {
+                        "multi_match": {
+                          "query":"%s",
+                          "fields":["name^3","brand","categories","attributes.*"],
+                          "lenient": true
+                        }
+                      },
+                      {
+                        "multi_match": {
+                          "query":"%s",
+                          "fields":["name^3"],
+                          "type": "phrase_prefix"
+                        }
+                      }
+                    ]
+                  }
+                }
+                """.formatted(escape(q), escape(q));
 
         StringBuilder filter = new StringBuilder();
         if (brand != null && !brand.isEmpty()) {
