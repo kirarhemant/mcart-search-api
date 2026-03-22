@@ -89,9 +89,16 @@ public class SearchController {
                     { "terms": { "categories": %s } },""".formatted(toJsonArray(categories)));
         }
         if (priceMin != null || priceMax != null) {
-            String gte = priceMin != null ? "\"gte\":" + priceMin + "," : "";
-            String lte = priceMax != null ? "\"lte\":" + priceMax + "," : "";
-            filter.append("{ \"range\": { \"price\": { %s %s } } },".formatted(gte, lte).replace(", }", " }"));
+            StringBuilder range = new StringBuilder();
+
+            if (priceMin != null) {
+                range.append("\"gte\":").append(priceMin);
+            }
+            if (priceMax != null) {
+                if (range.length() > 0) range.append(",");
+                range.append("\"lte\":").append(priceMax);
+            }
+            filter.append("{ \"range\": { \"price\": { " + range + " } } },");
         }
 
         String bool = """
