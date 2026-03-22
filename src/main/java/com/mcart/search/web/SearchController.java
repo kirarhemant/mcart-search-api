@@ -44,42 +44,6 @@ public class SearchController {
     /**
      * Full‑text search (PLP) across name/brand/attributes.*
      */
-    //@GetMapping
-    /*public JsonNode search(@RequestParam @NotBlank String q,
-                           @RequestParam(defaultValue="0") @Min(0) int page,
-                           @RequestParam(defaultValue="20") @Min(1) int size) throws Exception {
-
-        int from = Math.max(0, page * size);
-
-        String body = """
-    {
-      "from": %d,
-      "size": %d,
-      "query": {
-        "multi_match": {
-          "query": "%s",
-          "fields": ["name^3","brand","attributes.*"],
-          "lenient": true
-        }
-      },
-      "aggs": {
-        "brands": { "terms": { "field": "brand" } },
-        "price_hist": { "histogram": { "field": "price", "interval": 100.0 } }
-      }
-    }
-    """.formatted(from, size, escape(q));
-
-        Request req = new Request("POST", "/" + index + "/_search");
-        req.setJsonEntity(body);
-        Response resp = client.performRequest(req);
-        try (InputStream in = resp.getEntity().getContent()) {
-            return objectMapper.readTree(in);
-        }
-    }*/
-
-    /**
-     * Full‑text search (PLP) across name/brand/attributes.*
-     */
     @GetMapping
     public JsonNode search(@RequestParam(required = false) String q,
                            @RequestParam(defaultValue="0") @Min(0) int page,
@@ -87,37 +51,32 @@ public class SearchController {
                            @RequestParam(required = false) List<String> brand,
                            @RequestParam(required = false) List<String> categories,
                            @RequestParam(required = false) Double priceMin,
-                           @RequestParam(required = false) Double priceMax) throws IOException {
-
-        /*String must = (q == null || q.isBlank())
-                ? """
-          { "match_all": {} }
-          """
-                : """
-          { "multi_match": { "query":"%s","fields":["name^3","brand","categories","attributes.*"],"lenient": true } }
-          """.formatted(escape(q));*/
+                           @RequestParam(required = false) Double priceMax,
+                           @RequestParam(defaultValue = "relevance") String sort) throws IOException {
 
         String must = (q == null || q.isBlank()) ? "{ \"match_all\": {} }" : """
                 {
-                  "bool": {
-                    "should": [
-                      {
-                        "multi_match": {
-                          "query":"%s",
-                          "fields":["name^3","brand","categories","attributes.*"],
-                          "lenient": true
-                        }
-                      },
-                      {
-                        "multi_match": {
-                          "query":"%s",
-                          "fields":["name^3"],
-                          "type": "phrase_prefix"
-                        }
-                      }
-                    ]
-                  }
-                }
+                   "bool": {
+                     "should": [
+                       {
+                         "multi_match": {
+                           "query": "%s",
+                           "fields": ["name^4", "brand^2", "categories","attributes.*"],
+                           "lenient": true,
+                           "fuzziness": "AUTO"
+                         }
+                       },
+                       {
+                         "multi_match": {
+                           "query": "%s",
+                           "fields": ["name^3"],
+                           "type": "phrase_prefix"
+                         }
+                       }
+                     ],
+                     "minimum_should_match": 1
+                   }
+                 }
                 """.formatted(escape(q), escape(q));
 
         StringBuilder filter = new StringBuilder();
@@ -138,20 +97,36 @@ public class SearchController {
         String bool = """
                 "query": { "bool": {
                   "must": [%s],
-                  %s
-                }}""".formatted(must,
-                filter.length() > 0 ? "\"filter\": [" + trimComma(filter) + "]" : "\"filter\": []");
+                  %s,
+                  "should": [
+                    { "match": { "name": { "query": "%s", "boost": 3 } } }
+                  ]
+                }}"""
+                .formatted(must,
+                        filter.length() > 0 ? "\"filter\": [" + trimComma(filter) + "]" : "\"filter\": []",
+                        escape(q == null ? "" : q));
+
+        String sortJson;
+
+        if ("price_asc".equals(sort)) {
+            sortJson = "[{ \"price\": \"asc\" }]";
+        } else if ("price_desc".equals(sort)) {
+            sortJson = "[{ \"price\": \"desc\" }]";
+        } else {
+            sortJson = "[\"_score\"]"; // default relevance
+        }
 
         String body = """
                 {
                   "from": %d, "size": %d,
                   %s,
+                  "sort": %s,
                   "aggs": {
                     "brands": { "terms": {"field":"brand"} },
                     "categories": { "terms": { "field": "categories" } },
                     "price_hist": { "histogram": {"field":"price","interval":100.0} }
                   }
-                }""".formatted(page * size, size, bool);
+                }""".formatted(page * size, size, bool, sortJson);
 
         Request req = new Request("POST", "/" + index + "/_search");
         req.setOptions(options);
