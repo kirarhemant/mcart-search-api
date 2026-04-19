@@ -3,7 +3,7 @@ server:
 
 es:
   url: ${ES_URL:https://c908f2497167445385e8b342d3ad51a7.asia-south1.gcp.elastic-cloud.com:443}   # override via env var ES_URL
-  apiKey: ${ES_API_KEY:ZWZSN29KMEJyelJwZS0xekhBYTM6N0dqeFdoUEhhaWNBY2w2dnNBMl9Idw==}        # REQUIRED: base64(id:key)
+  apiKey: ${ES_API_KEY:WjFXb3BaMEJrWnJRNkhsSFRLeUU6c1AzUG5ETV9ZNl84VkhlYzVZWGFCQQ==}        # REQUIRED: base64(id:key)
 
 spring:
   main:
